@@ -1,0 +1,10 @@
+.env
+.env.*
+.git
+.gitignore
+.editorconfig
+.dockerignore
+Dockerfile
+vendor
+var
+tests

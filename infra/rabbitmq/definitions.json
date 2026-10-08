@@ -1,33 +1,33 @@
 {
-  "vhosts": [{ "name": "modulasso" }],
+  "vhosts": [{ "name": "__VHOST__" }],
   "users": [
     {
-      "name": "modulasso",
+      "name": "__UTILISATEUR__",
       "password_hash": "__HACHAGE__",
       "hashing_algorithm": "rabbit_password_hashing_sha256",
       "tags": ["administrator"]
     }
   ],
   "permissions": [
-    { "user": "modulasso", "vhost": "modulasso", "configure": ".*", "write": ".*", "read": ".*" }
+    { "user": "__UTILISATEUR__", "vhost": "__VHOST__", "configure": ".*", "write": ".*", "read": ".*" }
   ],
   "exchanges": [
-    { "name": "envois", "vhost": "modulasso", "type": "direct", "durable": true, "auto_delete": false, "internal": false, "arguments": {} }
+    { "name": "envois", "vhost": "__VHOST__", "type": "direct", "durable": true, "auto_delete": false, "internal": false, "arguments": {} }
   ],
   "queues": [
-    { "name": "email", "vhost": "modulasso", "durable": true, "auto_delete": false, "arguments": { "x-queue-type": "quorum" } },
-    { "name": "email-error", "vhost": "modulasso", "durable": true, "auto_delete": false, "arguments": { "x-queue-type": "quorum" } },
-    { "name": "sms", "vhost": "modulasso", "durable": true, "auto_delete": false, "arguments": { "x-queue-type": "quorum" } },
-    { "name": "sms-error", "vhost": "modulasso", "durable": true, "auto_delete": false, "arguments": { "x-queue-type": "quorum" } },
-    { "name": "notification", "vhost": "modulasso", "durable": true, "auto_delete": false, "arguments": { "x-queue-type": "quorum" } },
-    { "name": "notification-error", "vhost": "modulasso", "durable": true, "auto_delete": false, "arguments": { "x-queue-type": "quorum" } }
+    { "name": "email", "vhost": "__VHOST__", "durable": true, "auto_delete": false, "arguments": { "x-queue-type": "quorum" } },
+    { "name": "email-error", "vhost": "__VHOST__", "durable": true, "auto_delete": false, "arguments": { "x-queue-type": "quorum" } },
+    { "name": "sms", "vhost": "__VHOST__", "durable": true, "auto_delete": false, "arguments": { "x-queue-type": "quorum" } },
+    { "name": "sms-error", "vhost": "__VHOST__", "durable": true, "auto_delete": false, "arguments": { "x-queue-type": "quorum" } },
+    { "name": "notification", "vhost": "__VHOST__", "durable": true, "auto_delete": false, "arguments": { "x-queue-type": "quorum" } },
+    { "name": "notification-error", "vhost": "__VHOST__", "durable": true, "auto_delete": false, "arguments": { "x-queue-type": "quorum" } }
   ],
   "bindings": [
-    { "source": "envois", "vhost": "modulasso", "destination": "email", "destination_type": "queue", "routing_key": "email", "arguments": {} },
-    { "source": "envois", "vhost": "modulasso", "destination": "email-error", "destination_type": "queue", "routing_key": "email-error", "arguments": {} },
-    { "source": "envois", "vhost": "modulasso", "destination": "sms", "destination_type": "queue", "routing_key": "sms", "arguments": {} },
-    { "source": "envois", "vhost": "modulasso", "destination": "sms-error", "destination_type": "queue", "routing_key": "sms-error", "arguments": {} },
-    { "source": "envois", "vhost": "modulasso", "destination": "notification", "destination_type": "queue", "routing_key": "notification", "arguments": {} },
-    { "source": "envois", "vhost": "modulasso", "destination": "notification-error", "destination_type": "queue", "routing_key": "notification-error", "arguments": {} }
+    { "source": "envois", "vhost": "__VHOST__", "destination": "email", "destination_type": "queue", "routing_key": "email", "arguments": {} },
+    { "source": "envois", "vhost": "__VHOST__", "destination": "email-error", "destination_type": "queue", "routing_key": "email-error", "arguments": {} },
+    { "source": "envois", "vhost": "__VHOST__", "destination": "sms", "destination_type": "queue", "routing_key": "sms", "arguments": {} },
+    { "source": "envois", "vhost": "__VHOST__", "destination": "sms-error", "destination_type": "queue", "routing_key": "sms-error", "arguments": {} },
+    { "source": "envois", "vhost": "__VHOST__", "destination": "notification", "destination_type": "queue", "routing_key": "notification", "arguments": {} },
+    { "source": "envois", "vhost": "__VHOST__", "destination": "notification-error", "destination_type": "queue", "routing_key": "notification-error", "arguments": {} }
   ]
 }

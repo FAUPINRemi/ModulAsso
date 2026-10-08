@@ -1,5 +1,6 @@
--- RLS activée sans FORCE : modulasso_owner (migrations, vues de stats, fonctions SECURITY DEFINER)
--- n'y est pas soumis. modulasso_app l'est toujours. Sans politique qui s'applique, aucune ligne.
+-- RLS activée sans FORCE : le propriétaire (migrations, vues de stats, fonctions SECURITY DEFINER)
+-- n'y est pas soumis. Le rôle applicatif l'est toujours. Sans politique qui s'applique, aucune ligne.
+-- Les politiques ne nomment aucun rôle : seul le rôle applicatif a des droits sur les tables.
 
 DO $$
 DECLARE
@@ -14,7 +15,7 @@ BEGIN
   ] LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
     EXECUTE format(
-      'CREATE POLICY isolation ON %I TO modulasso_app
+      'CREATE POLICY isolation ON %I
          USING (structure_id = structure_courante())
          WITH CHECK (structure_id = structure_courante())', t);
   END LOOP;
@@ -22,36 +23,40 @@ END
 $$;
 
 -- Un utilisateur voit ses adhésions dans toutes ses structures, pour choisir laquelle ouvrir.
-CREATE POLICY mes_adhesions ON membre FOR SELECT TO modulasso_app
+CREATE POLICY mes_adhesions ON membre FOR SELECT
   USING (utilisateur_id = utilisateur_courant());
 
 ALTER TABLE structure ENABLE ROW LEVEL SECURITY;
-CREATE POLICY lecture ON structure FOR SELECT TO modulasso_app
+CREATE POLICY lecture ON structure FOR SELECT
   USING (id = structure_courante()
          OR EXISTS (SELECT 1 FROM membre m WHERE m.structure_id = structure.id
                                              AND m.utilisateur_id = utilisateur_courant()));
-CREATE POLICY creation ON structure FOR INSERT TO modulasso_app
+CREATE POLICY creation ON structure FOR INSERT
   WITH CHECK (true);
-CREATE POLICY modification ON structure FOR UPDATE TO modulasso_app
+CREATE POLICY modification ON structure FOR UPDATE
   USING (id = structure_courante())
   WITH CHECK (id = structure_courante());
 
 ALTER TABLE notification ENABLE ROW LEVEL SECURITY;
-CREATE POLICY isolation ON notification TO modulasso_app
+CREATE POLICY isolation ON notification
   USING (structure_id = structure_courante())
   WITH CHECK (structure_id = structure_courante());
-CREATE POLICY destinataire_lecture ON notification FOR SELECT TO modulasso_app
+CREATE POLICY destinataire_lecture ON notification FOR SELECT
   USING (utilisateur_id = utilisateur_courant());
-CREATE POLICY destinataire_lu ON notification FOR UPDATE TO modulasso_app
+CREATE POLICY destinataire_lu ON notification FOR UPDATE
   USING (utilisateur_id = utilisateur_courant())
   WITH CHECK (utilisateur_id = utilisateur_courant());
 
 -- Journal en ajout seul.
 ALTER TABLE journal ENABLE ROW LEVEL SECURITY;
-REVOKE UPDATE, DELETE ON journal FROM modulasso_app;
-CREATE POLICY lecture ON journal FOR SELECT TO modulasso_app
+DO $$
+BEGIN
+  EXECUTE format('REVOKE UPDATE, DELETE ON journal FROM %I', current_setting('modulasso.role_app'));
+END
+$$;
+CREATE POLICY lecture ON journal FOR SELECT
   USING (structure_id = structure_courante());
-CREATE POLICY ajout ON journal FOR INSERT TO modulasso_app
+CREATE POLICY ajout ON journal FOR INSERT
   WITH CHECK (structure_id = structure_courante()
               OR (structure_id IS NULL AND utilisateur_id = utilisateur_courant()));
 
@@ -72,7 +77,7 @@ BEGIN
   ) AS v(liaison, parent_a, col_a, parent_b, col_b) LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', l.liaison);
     EXECUTE format(
-      'CREATE POLICY isolation ON %1$I TO modulasso_app
+      'CREATE POLICY isolation ON %1$I
          USING (EXISTS (SELECT 1 FROM %2$I p WHERE p.id = %1$I.%3$I AND p.structure_id = structure_courante())
             AND EXISTS (SELECT 1 FROM %4$I p WHERE p.id = %1$I.%5$I AND p.structure_id = structure_courante()))
          WITH CHECK (EXISTS (SELECT 1 FROM %2$I p WHERE p.id = %1$I.%3$I AND p.structure_id = structure_courante())

@@ -10,18 +10,25 @@ if [ -n "${MODULASSO_SECRETS:-}" ]; then
   exit 1
 fi
 
+charger_env() {
+  [ -f "$racine/infra/.env" ] || cp "$racine/infra/.env.example" "$racine/infra/.env"
+  set -a
+  . "$racine/infra/.env"
+  set +a
+}
+
 schema_present() {
-  [ "$($compose exec -T db psql -U postgres -d modulasso -Atc "SELECT to_regclass('public.structure') IS NOT NULL")" = "t" ]
+  [ "$($compose exec -T db psql -U "$DB_SUPERUSER" -d "$DB_NAME" -Atc "SELECT to_regclass('public.structure') IS NOT NULL")" = "t" ]
 }
 
 appliquer_schema() {
   cat "$racine"/apps/api/migrations/schema/*.sql \
-    | $compose exec -T db psql -q -U modulasso_owner -d modulasso --single-transaction -v ON_ERROR_STOP=1
+    | $compose exec -T db psql -q -U "$DB_OWNER_USER" -d "$DB_NAME" --single-transaction -v ON_ERROR_STOP=1
   echo "schéma appliqué"
 }
 
 demarrer() {
-  [ -f "$racine/infra/.env" ] || cp "$racine/infra/.env.example" "$racine/infra/.env"
+  charger_env
   "$racine/infra/scripts/secrets-dev.sh"
   $compose up -d --wait db rabbitmq mailpit
   if schema_present; then echo "schéma déjà en place"; else appliquer_schema; fi

@@ -7,6 +7,7 @@ sel=$(head -c 4 /dev/urandom | xxd -p)
 empreinte=$( { printf '%s' "$sel" | xxd -r -p; tr -d '\n' < /run/secrets/rabbitmq_password; } | sha256sum | cut -d' ' -f1)
 hachage=$(printf '%s%s' "$sel" "$empreinte" | xxd -r -p | base64 | tr -d '\n')
 
-sed "s|__HACHAGE__|$hachage|" /etc/rabbitmq/modulasso/definitions.json > /run/rabbitmq/definitions.json
+sed -e "s|__HACHAGE__|$hachage|" -e "s|__VHOST__|$RABBITMQ_VHOST|g" -e "s|__UTILISATEUR__|$RABBITMQ_USER|g" \
+  /etc/rabbitmq/modulasso/definitions.json > /run/rabbitmq/definitions.json
 
 exec docker-entrypoint.sh rabbitmq-server

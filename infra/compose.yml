@@ -8,18 +8,26 @@ x-durci: &durci
 
 x-api: &api
   <<: *durci
-  build: ../apps/api
+  build:
+    context: ../apps/api
+    args:
+      APP_ENV: ${APP_ENV}
+      DEFAULT_URI: ${API_DEFAULT_URI}
   image: modulasso/api:local
   environment:
-    APP_ENV: prod
-    DATABASE_HOST: db
-    DATABASE_PORT: "5432"
-    DATABASE_NAME: modulasso
-    DATABASE_USER: modulasso_app
-    RABBITMQ_HOST: rabbitmq
-    RABBITMQ_PORT: "5672"
-    RABBITMQ_VHOST: modulasso
-    RABBITMQ_USER: modulasso
+    APP_ENV: ${APP_ENV}
+    APP_DEBUG: ${APP_DEBUG}
+    APP_SECRET_FILE: ${APP_SECRET_FILE}
+    DEFAULT_URI: ${API_DEFAULT_URI}
+    API_PORT: ${API_PORT}
+    DATABASE_HOST: ${DB_HOST}
+    DATABASE_PORT: ${DB_PORT}
+    DATABASE_NAME: ${DB_NAME}
+    DATABASE_USER: ${DB_APP_USER}
+    RABBITMQ_HOST: ${RABBITMQ_HOST}
+    RABBITMQ_PORT: ${RABBITMQ_PORT}
+    RABBITMQ_VHOST: ${RABBITMQ_VHOST}
+    RABBITMQ_USER: ${RABBITMQ_USER}
   secrets: [app_secret, db_app_password, rabbitmq_password]
   tmpfs: [/tmp]
   depends_on:
@@ -29,32 +37,36 @@ x-api: &api
 services:
   db:
     <<: *durci
-    image: postgres:18-alpine@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873
+    image: postgres:18.6-alpine3.24@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873
     user: postgres
     environment:
+      POSTGRES_USER: ${DB_SUPERUSER}
       POSTGRES_PASSWORD_FILE: /run/secrets/db_superuser_password
+      DB_NAME: ${DB_NAME}
+      DB_OWNER_USER: ${DB_OWNER_USER}
+      DB_APP_USER: ${DB_APP_USER}
+      DB_STATS_USER: ${DB_STATS_USER}
     secrets: [db_superuser_password, db_owner_password, db_app_password, db_stats_password]
     volumes:
       - db_data:/var/lib/postgresql
       - ./postgres/initdb:/docker-entrypoint-initdb.d:ro
     tmpfs: [/var/run/postgresql, /tmp]
-    shm_size: 128m
     networks: [interne]
     healthcheck:
-      test: [CMD, pg_isready, -U, postgres, -d, modulasso]
+      test: [CMD-SHELL, pg_isready -U "$$POSTGRES_USER" -d "$$DB_NAME"]
       interval: 5s
       timeout: 3s
       retries: 10
-    deploy:
-      resources:
-        limits: { cpus: "1", memory: 1g }
 
   rabbitmq:
     <<: *durci
-    image: rabbitmq:4.1-management-alpine@sha256:b586ea9784425774ac56f3d4919e4f723edb3287ef8a6c4c8f0df8fe569747c3
-    hostname: rabbitmq
+    image: rabbitmq:4.1.8-management-alpine@sha256:b586ea9784425774ac56f3d4919e4f723edb3287ef8a6c4c8f0df8fe569747c3
+    hostname: ${RABBITMQ_HOST}
     user: rabbitmq
     entrypoint: [/etc/rabbitmq/modulasso/demarrage.sh]
+    environment:
+      RABBITMQ_VHOST: ${RABBITMQ_VHOST}
+      RABBITMQ_USER: ${RABBITMQ_USER}
     secrets: [rabbitmq_password]
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
@@ -68,47 +80,17 @@ services:
       timeout: 10s
       retries: 10
       start_period: 20s
-    deploy:
-      resources:
-        limits: { cpus: "1", memory: 512m }
 
   api:
     <<: *api
     networks: [interne, sortie, admin]
-    deploy:
-      resources:
-        limits: { cpus: "1", memory: 512m }
-
-  worker:
-    <<: *api
-    command: [php, bin/console, messenger:consume, email, sms, notification, interne, --time-limit=3600]
-    networks: [interne, sortie]
-    deploy:
-      resources:
-        limits: { cpus: "1", memory: 512m }
-
-  migrations:
-    <<: *api
-    restart: "no"
-    profiles: [outils]
-    environment:
-      APP_ENV: prod
-      DATABASE_HOST: db
-      DATABASE_PORT: "5432"
-      DATABASE_NAME: modulasso
-      DATABASE_USER: modulasso_owner
-    secrets: [app_secret, db_owner_password]
-    command: [php, bin/console, doctrine:migrations:migrate, --no-interaction]
-    depends_on:
-      db: { condition: service_healthy }
-    networks: [interne]
 
   web:
     <<: *durci
     build: ../apps/web
     image: modulasso/web:local
     environment:
-      API_URL: http://api:8080
+      API_URL: ${API_URL}
     tmpfs: [/tmp]
     depends_on: [api]
     networks: [traefik, interne]
@@ -119,10 +101,7 @@ services:
       - traefik.http.routers.modulasso-web.entrypoints=websecure
       - traefik.http.routers.modulasso-web.tls.certresolver=le
       - traefik.http.routers.modulasso-web.middlewares=${MODULASSO_ACCES_WEB}
-      - traefik.http.services.modulasso-web.loadbalancer.server.port=3000
-    deploy:
-      resources:
-        limits: { cpus: "1", memory: 512m }
+      - traefik.http.services.modulasso-web.loadbalancer.server.port=${WEB_PORT}
 
 networks:
   traefik:

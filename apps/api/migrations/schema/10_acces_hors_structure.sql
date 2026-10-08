@@ -1,5 +1,6 @@
+-- Droit d'exécution réservé au rôle applicatif par les droits par défaut (infra/postgres/initdb).
 -- Lectures nécessaires avant de connaître la structure courante. SECURITY DEFINER : elles
--- s'exécutent comme modulasso_owner, hors RLS, et ne renvoient que le strict nécessaire.
+-- s'exécutent comme le propriétaire, hors RLS, et ne renvoient que le strict nécessaire.
 
 CREATE FUNCTION invitation_par_jeton(p_token_hash char(64))
   RETURNS TABLE (id uuid, structure_id uuid, role_id uuid, email varchar, expire_le timestamptz)
@@ -28,8 +29,3 @@ CREATE FUNCTION toutes_les_structures()
   LANGUAGE sql STABLE SECURITY DEFINER
   SET search_path = public, pg_temp
   AS $$ SELECT id FROM structure ORDER BY id $$;
-
-REVOKE ALL ON FUNCTION invitation_par_jeton(char), invitation_groupe_par_jeton(char), toutes_les_structures()
-  FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION invitation_par_jeton(char), invitation_groupe_par_jeton(char), toutes_les_structures()
-  TO modulasso_app;
