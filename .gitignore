@@ -1,0 +1,68 @@
+# Docs (restent en local, pas dans le dépôt)
+docs/
+CLAUDE.md
+# Secrets
+.env
+.env.*
+!.env.example
+infra/secrets/*
+!infra/secrets/README.md
+*.pem
+*.key
+*.crt
+wg*.conf
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+next-env.d.ts
+coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# PWA généré (Serwist)
+apps/*/public/sw.js
+apps/*/public/sw.js.map
+apps/*/public/swe-worker-*.js
+apps/*/public/workbox-*.js
+
+# Symfony / PHP
+apps/api/vendor/
+apps/api/var/
+apps/api/.phpunit.cache/
+apps/api/.php-cs-fixer.cache
+apps/api/.phpunit.result.cache
+apps/api/public/bundles/
+apps/api/config/jwt/*.pem
+
+# Client API généré
+packages/api-client/dist/
+packages/api-client/node_modules/
+
+# Docker / infra
+infra/**/data/
+infra/backup/dumps/
+*.dump
+*.sql.gz
+*.sql.enc
+docker-compose.override.yml
+
+# Logs et fichiers temporaires
+*.log
+logs/
+tmp/
+*.tmp
+*.swp
+
+# Outils et éditeurs
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+.claude/settings.local.json

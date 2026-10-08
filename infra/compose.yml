@@ -1,0 +1,152 @@
+name: modulasso
+
+x-durci: &durci
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  restart: unless-stopped
+
+x-api: &api
+  <<: *durci
+  build: ../apps/api
+  image: modulasso/api:local
+  environment:
+    APP_ENV: prod
+    DATABASE_HOST: db
+    DATABASE_PORT: "5432"
+    DATABASE_NAME: modulasso
+    DATABASE_USER: modulasso_app
+    RABBITMQ_HOST: rabbitmq
+    RABBITMQ_PORT: "5672"
+    RABBITMQ_VHOST: modulasso
+    RABBITMQ_USER: modulasso
+  secrets: [app_secret, db_app_password, rabbitmq_password]
+  tmpfs: [/tmp]
+  depends_on:
+    db: { condition: service_healthy }
+    rabbitmq: { condition: service_healthy }
+
+services:
+  db:
+    <<: *durci
+    image: postgres:18-alpine@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873
+    user: postgres
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_superuser_password
+    secrets: [db_superuser_password, db_owner_password, db_app_password, db_stats_password]
+    volumes:
+      - db_data:/var/lib/postgresql
+      - ./postgres/initdb:/docker-entrypoint-initdb.d:ro
+    tmpfs: [/var/run/postgresql, /tmp]
+    shm_size: 128m
+    networks: [interne]
+    healthcheck:
+      test: [CMD, pg_isready, -U, postgres, -d, modulasso]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    deploy:
+      resources:
+        limits: { cpus: "1", memory: 1g }
+
+  rabbitmq:
+    <<: *durci
+    image: rabbitmq:4.1-management-alpine@sha256:b586ea9784425774ac56f3d4919e4f723edb3287ef8a6c4c8f0df8fe569747c3
+    hostname: rabbitmq
+    user: rabbitmq
+    entrypoint: [/etc/rabbitmq/modulasso/demarrage.sh]
+    secrets: [rabbitmq_password]
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./rabbitmq:/etc/rabbitmq/modulasso:ro
+      - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/conf.d/10-modulasso.conf:ro
+    tmpfs: [/run/rabbitmq, /tmp]
+    networks: [interne]
+    healthcheck:
+      test: [CMD, rabbitmq-diagnostics, -q, check_running]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+    deploy:
+      resources:
+        limits: { cpus: "1", memory: 512m }
+
+  api:
+    <<: *api
+    networks: [interne, sortie, admin]
+    deploy:
+      resources:
+        limits: { cpus: "1", memory: 512m }
+
+  worker:
+    <<: *api
+    command: [php, bin/console, messenger:consume, email, sms, notification, interne, --time-limit=3600]
+    networks: [interne, sortie]
+    deploy:
+      resources:
+        limits: { cpus: "1", memory: 512m }
+
+  migrations:
+    <<: *api
+    restart: "no"
+    profiles: [outils]
+    environment:
+      APP_ENV: prod
+      DATABASE_HOST: db
+      DATABASE_PORT: "5432"
+      DATABASE_NAME: modulasso
+      DATABASE_USER: modulasso_owner
+    secrets: [app_secret, db_owner_password]
+    command: [php, bin/console, doctrine:migrations:migrate, --no-interaction]
+    depends_on:
+      db: { condition: service_healthy }
+    networks: [interne]
+
+  web:
+    <<: *durci
+    build: ../apps/web
+    image: modulasso/web:local
+    environment:
+      API_URL: http://api:8080
+    tmpfs: [/tmp]
+    depends_on: [api]
+    networks: [traefik, interne]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik
+      - traefik.http.routers.modulasso-web.rule=Host(`${MODULASSO_DOMAINE}`) && PathPrefix(`${MODULASSO_CHEMIN}`)
+      - traefik.http.routers.modulasso-web.entrypoints=websecure
+      - traefik.http.routers.modulasso-web.tls.certresolver=le
+      - traefik.http.routers.modulasso-web.middlewares=${MODULASSO_ACCES_WEB}
+      - traefik.http.services.modulasso-web.loadbalancer.server.port=3000
+    deploy:
+      resources:
+        limits: { cpus: "1", memory: 512m }
+
+networks:
+  traefik:
+    external: true
+  interne:
+    internal: true
+  sortie: {}
+  admin:
+    internal: true
+
+volumes:
+  db_data: {}
+  rabbitmq_data: {}
+
+secrets:
+  db_superuser_password:
+    file: ${MODULASSO_SECRETS:-./secrets}/db_superuser_password
+  db_owner_password:
+    file: ${MODULASSO_SECRETS:-./secrets}/db_owner_password
+  db_app_password:
+    file: ${MODULASSO_SECRETS:-./secrets}/db_app_password
+  db_stats_password:
+    file: ${MODULASSO_SECRETS:-./secrets}/db_stats_password
+  rabbitmq_password:
+    file: ${MODULASSO_SECRETS:-./secrets}/rabbitmq_password
+  app_secret:
+    file: ${MODULASSO_SECRETS:-./secrets}/app_secret

@@ -1,0 +1,21 @@
+services:
+  api:
+    environment:
+      APP_ENV: dev
+      MAILER_HOST: mailpit
+      MAILER_PORT: "1025"
+
+  worker:
+    environment:
+      APP_ENV: dev
+      MAILER_HOST: mailpit
+      MAILER_PORT: "1025"
+
+  mailpit:
+    image: axllent/mailpit:v1.27@sha256:e22dce5b36f93c77082e204a3942fb6b283b7896e057458400a4c88344c3df68
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+    tmpfs: [/tmp]
+    networks: [interne]
