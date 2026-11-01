@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+/* Charte Alvéo : vert profond, fond doux, orange et brun en accents. */
+@theme {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+
+  --color-brand-50: #eef7f1;
+  --color-brand-100: #d7ecde;
+  --color-brand-200: #b0d9bf;
+  --color-brand-500: #2c9461;
+  --color-brand-600: #1f7a4d;
+  --color-brand-700: #19633f;
+  --color-brand-800: #144f33;
+  --color-brand-900: #12291d;
+
+  --color-canvas: #f1f5f2;
+  --color-card: #ffffff;
+  --color-line: #dbe4de;
+  --color-ink: #1a2a21;
+  --color-muted: #55665b;
+
+  --color-ok-soft: #dff1e5;
+  --color-ok-strong: #14603a;
+  --color-maybe-soft: #fbe9cf;
+  --color-maybe-strong: #7a4408;
+  --color-off-soft: #eaeeeb;
+  --color-off-strong: #46524b;
+  --color-danger-soft: #f8dcd8;
+  --color-danger-strong: #9a2f22;
+  --color-warn-soft: #f7e3cc;
+  --color-warn-strong: #a14a1f;
+  --color-accent: #5a3510;
+
+  --radius-card: 1rem;
+  --shadow-card: 0 1px 2px rgb(18 41 29 / 0.05), 0 1px 1px rgb(18 41 29 / 0.03);
+}
+
+@layer base {
+  html {
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    font-family: var(--font-sans);
+    min-height: 100dvh;
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-brand-600);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
