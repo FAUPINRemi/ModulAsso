@@ -29,6 +29,8 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
+  // Racine = apps/web : évite qu'un package.json hors dépôt (ex. C:\Users\carlh) soit pris pour la racine.
+  turbopack: { root: process.cwd() },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
